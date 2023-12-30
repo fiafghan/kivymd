@@ -24,6 +24,11 @@ jobs:
         with:
           sdk-platform: 'android-29'
 
+      - name: Install Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install cython
+
       - name: Build APK
         run: |
           sudo apt-get install -y python3-pip
