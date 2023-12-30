@@ -30,6 +30,11 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install cython
 
+      - name: Install Aidl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aidl
+
       - name: Build APK
         run: |
           sudo apt-get install -y python3-pip
