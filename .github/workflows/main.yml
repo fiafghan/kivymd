@@ -1,53 +1,42 @@
-name: Build APK
-
+name: CI
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Set up Java
-        uses: actions/setup-java@v2
+      used to cache dependencies with a timeout
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
+        shell: bash
+
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v2
         with:
-          java-version: '17'
-          distribution: 'adopt'
+          path: .buildozer_global
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }} # Replace with your path
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
+      - uses: actions/cache@v2
         with:
-          sdk-platform: 'android-29'
-          ndk-version: '22.1.7171670' # Optional: Specify the NDK version if needed
+          path: .buildozer
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
 
-      - name: Install Cython
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install cython
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          buildozer_version: stable
 
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
-
-      - name: Install Aidl
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y aidl
-
-      - name: Build APK
-        run: |
-          sudo apt-get install -y python3-pip
-          pip3 install --upgrade buildozer
-
-          buildozer init
-          buildozer android debug
-
-      - name: Upload APK artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: app-debug.apk
-          path: bin/*.apk
+          name: package
+          path: ${{ steps.buildozer.outputs.filename }}
